@@ -171,6 +171,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		00C24DDE24CB83CD00879E50 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		402F02A41F7DA28700E7FF06 /* Cartfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Cartfile; sourceTree = "<group>"; };
 		402F02A51F7DA28700E7FF06 /* MapboxMobileEvents.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = MapboxMobileEvents.podspec; sourceTree = "<group>"; };
 		4032F47D1F1FEDC6001C1FBD /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
@@ -420,6 +421,7 @@
 				9C65A2CB2282081A006E3FED /* scripts */,
 				9C27F7262499B0E20018E7A9 /* module.private.modulemap */,
 				402F02A41F7DA28700E7FF06 /* Cartfile */,
+				00C24DDE24CB83CD00879E50 /* Package.swift */,
 				9C6322622213530A00653792 /* Makefile */,
 				404C5E221F85809400C026DD /* Scanfile */,
 				9C6D9883221F37FA00679292 /* package.json */,
@@ -872,6 +874,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.0;
 				WARNING_CFLAGS = (
 					"-Wunused-property-ivar",
 					"-Wsemicolon-before-method-body",
@@ -906,6 +909,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.0;
 				WARNING_CFLAGS = (
 					"-Wunused-property-ivar",
 					"-Wsemicolon-before-method-body",
@@ -1137,6 +1141,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = YES;
+				SWIFT_VERSION = 5.0;
 				WARNING_CFLAGS = (
 					"-Wunused-property-ivar",
 					"-Wsemicolon-before-method-body",
