@@ -1,6 +1,12 @@
 #import "MMEUIApplicationWrapper.h"
+
+#if SWIFT_PACKAGE
+#import "Categories/NSBundle+MMEMobileEvents.h"
+#import "Categories/UIKit+MMEMobileEvents.h"
+#else
 #import "NSBundle+MMEMobileEvents.h"
 #import "UIKit+MMEMobileEvents.h"
+#endif
 
 // MARK: - App Extension Support
 

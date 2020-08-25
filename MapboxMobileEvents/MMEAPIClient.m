@@ -9,9 +9,15 @@
 #import "MMEEventsManager_Private.h"
 #import "MMEEventLogger.h"
 
+#if SWIFT_PACKAGE
+#import "Categories/NSData+MMEGZIP.h"
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#import "Categories/NSUserDefaults+MMEConfiguration_Private.h"
+#else
 #import "NSData+MMEGZIP.h"
 #import "NSUserDefaults+MMEConfiguration.h"
 #import "NSUserDefaults+MMEConfiguration_Private.h"
+#endif
 
 static NSString * const MMEMapboxAgent = @"X-Mapbox-Agent";
 

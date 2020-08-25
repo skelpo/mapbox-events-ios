@@ -1,4 +1,8 @@
+#if SWIFT_PACKAGE
+#import "MMETypes.h"
+#else
 #import <MapboxMobileEvents/MMETypes.h>
+#endif
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>

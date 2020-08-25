@@ -4,14 +4,26 @@
 #import "MMEDate.h"
 #import "MMEConstants.h"
 #import "MMECommonEventData.h"
+
+#if SWIFT_PACKAGE
+#import "Reachability/MMEReachability.h"
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#else
 #import "MMEReachability.h"
+#import "NSUserDefaults+MMEConfiguration.h"
+#endif
+
 #import "MMEEventsManager.h"
 #import "MMEUIApplicationWrapper.h"
 
-#import "NSUserDefaults+MMEConfiguration.h"
 #if TARGET_OS_IOS || TARGET_OS_TVOS
+#if SWIFT_PACKAGE
+#import "Categories/UIKit+MMEMobileEvents.h"
+#import "Categories/NSBundle+MMEMobileEvents.h"
+#else
 #import "UIKit+MMEMobileEvents.h"
 #import "NSBundle+MMEMobileEvents.h"
+#endif
 #endif
 
 

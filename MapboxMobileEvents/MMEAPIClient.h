@@ -1,5 +1,10 @@
 #import <Foundation/Foundation.h>
+
+#if SWIFT_PACKAGE
+#import "MMETypes.h"
+#else
 #import <MapboxMobileEvents/MMETypes.h>
+#endif
 
 NS_ASSUME_NONNULL_BEGIN
 

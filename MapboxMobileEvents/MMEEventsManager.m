@@ -6,11 +6,26 @@
 #import <UIKit/UIKit.h>
 #endif
 
+#if SWIFT_PACKAGE
+#import "Categories/MMECategoryLoader.h"
+#import "Categories/NSBundle+MMEMobileEvents.h"
+
+#import "Categories/CLLocation+MMEMobileEvents.h"
+#import "Categories/CLLocationManager+MMEMobileEvents.h"
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#else
+#import "MMECategoryLoader.h"
+#import "NSBundle+MMEMobileEvents.h"
+
+#import "CLLocation+MMEMobileEvents.h"
+#import "CLLocationManager+MMEMobileEvents.h"
+#import "NSUserDefaults+MMEConfiguration.h"
+#endif
+
 #import "MMEEventsManager.h"
 #import "MMEEventsManager_Private.h"
 #import "MMEAPIClient.h"
 #import "MMEAPIClient_Private.h"
-#import "MMECategoryLoader.h"
 #import "MMECommonEventData.h"
 #import "MMEConstants.h"
 #import "MMEDate.h"
@@ -22,11 +37,6 @@
 #import "MMEUIApplicationWrapper.h"
 #import "MMEUniqueIdentifier.h"
 #import "MMEEventLogger.h"
-#import "NSBundle+MMEMobileEvents.h"
-
-#import "CLLocation+MMEMobileEvents.h"
-#import "CLLocationManager+MMEMobileEvents.h"
-#import "NSUserDefaults+MMEConfiguration.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

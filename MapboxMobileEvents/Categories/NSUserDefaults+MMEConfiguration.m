@@ -1,8 +1,14 @@
 #import <CommonCrypto/CommonDigest.h>
-#import <MapboxMobileEvents/MMEConstants.h>
 
+#if SWIFT_PACKAGE
+#import "../MMEEventLogger.h"
+#import "../MMEConstants.h"
+#import "../MMEDate.h"
+#else
+#import <MapboxMobileEvents/MMEConstants.h>
 #import "MMEDate.h"
-#import "MMEEventLogger.h"
+#endif
+
 #import "NSBundle+MMEMobileEvents.h"
 #import "NSProcessInfo+SystemInfo.h"
 #import "NSString+MMEVersions.h"

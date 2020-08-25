@@ -3,7 +3,11 @@
 
 #if TARGET_OS_IOS || TARGET_OS_TVOS
 #import <UIKit/UIKit.h>
+#if SWIFT_PACKAGE
+#import "Categories/NSBundle+MMEMobileEvents.h"
+#else
 #import "NSBundle+MMEMobileEvents.h"
+#endif
 #import "MMEUIApplicationWrapper.h"
 #endif
 #include <sys/sysctl.h>

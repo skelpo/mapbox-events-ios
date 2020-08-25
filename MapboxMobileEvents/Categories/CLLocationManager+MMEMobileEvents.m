@@ -1,5 +1,9 @@
 #import "CLLocationManager+MMEMobileEvents.h"
+#if SWIFT_PACKAGE
+#import "../MMEConstants.h"
+#else
 #import "MMEConstants.h"
+#endif
 
 @implementation CLLocationManager (MMEMobileEvents)
 

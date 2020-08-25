@@ -5,7 +5,11 @@
 #import "MMEEventLogger.h"
 
 
+#if SWIFT_PACKAGE
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#else
 #import "NSUserDefaults+MMEConfiguration.h"
+#endif
 
 @interface MMECertPin()
 

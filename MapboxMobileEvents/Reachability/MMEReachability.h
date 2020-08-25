@@ -28,7 +28,11 @@
 #import <Foundation/Foundation.h>
 #import <SystemConfiguration/SystemConfiguration.h>
 
+#if SWIFT_PACKAGE
+#import "../MMETypes.h"
+#else
 #import <MapboxMobileEvents/MMETypes.h>
+#endif
 
 /**
  * Create NS_ENUM macro if it does not exist on the targeted version of iOS or OS X.

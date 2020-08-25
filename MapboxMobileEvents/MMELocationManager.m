@@ -4,8 +4,14 @@
 #import "MMELocationManager.h"
 #import "MMEMetricsManager.h"
 #import "MMEUIApplicationWrapper.h"
+
+#if SWIFT_PACKAGE
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#import "Categories/NSBundle+MMEMobileEvents.h"
+#else
 #import "NSUserDefaults+MMEConfiguration.h"
 #import "NSBundle+MMEMobileEvents.h"
+#endif
 
 static const NSTimeInterval MMELocationManagerHibernationTimeout = 300.0;
 static const NSTimeInterval MMELocationManagerHibernationPollInterval = 5.0;

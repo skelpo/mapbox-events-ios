@@ -1,5 +1,13 @@
 #import "MMEMetricsManager.h"
+
+#if SWIFT_PACKAGE
+#import "Reachability/MMEReachability.h"
+#import "Categories/NSUserDefaults+MMEConfiguration.h"
+#else
 #import "MMEReachability.h"
+#import "NSUserDefaults+MMEConfiguration.h"
+#endif
+
 #import "MMEConstants.h"
 #import "MMEDate.h"
 #import "MMEEvent.h"
@@ -7,7 +15,6 @@
 #import "MMECommonEventData.h"
 #import "MMEAPIClient.h"
 #import "MMEAPIClient_Private.h"
-#import "NSUserDefaults+MMEConfiguration.h"
 #import "MMEEventLogger.h"
 
 #pragma mark -
