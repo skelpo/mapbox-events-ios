@@ -9,12 +9,12 @@ let package = Package(
         .iOS(.v9)
     ],
     products: [
-        .library(name: "mapbox-events-ios", targets: ["mapbox-events-ios"]),
+        .library(name: "mapbox-events-ios", targets: ["MapboxMobileEvents"]),
     ],
     dependencies: [],
     targets: [
         .target(
-            name: "mapbox-events-ios",
+            name: "MapboxMobileEvents",
             dependencies: [],
             path: "MapboxMobileEvents/",
             exclude: [
