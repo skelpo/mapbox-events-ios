@@ -13,6 +13,7 @@
 #import "Categories/CLLocation+MMEMobileEvents.h"
 #import "Categories/CLLocationManager+MMEMobileEvents.h"
 #import "Categories/NSUserDefaults+MMEConfiguration.h"
+#import "Categories/NSUserDefaults+MMEConfiguration_Private.h"
 #else
 #import "MMECategoryLoader.h"
 #import "NSBundle+MMEMobileEvents.h"
@@ -20,6 +21,7 @@
 #import "CLLocation+MMEMobileEvents.h"
 #import "CLLocationManager+MMEMobileEvents.h"
 #import "NSUserDefaults+MMEConfiguration.h"
+#import "NSUserDefaults+MMEConfiguration_Private.h"
 #endif
 
 #import "MMEEventsManager.h"
@@ -98,58 +100,58 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)initializeWithAccessToken:(NSString *)accessToken userAgentBase:(NSString *)userAgentBase hostSDKVersion:(NSString *)hostSDKVersion {
-    @try {
-        if (self.apiClient) {
-            [NSUserDefaults.mme_configuration mme_setAccessToken:accessToken];
-            return;
-        }
-
-        self.apiClient = [[MMEAPIClient alloc] initWithAccessToken:accessToken
-            userAgentBase:userAgentBase
-            hostSDKVersion:hostSDKVersion];
-
-        [self sendPendingTelemetryMetricsEvent];
-
-        __weak __typeof__(self) weakSelf = self;
-        void(^initialization)(void) = ^{
-            __strong __typeof__(weakSelf) strongSelf = weakSelf;
-
-            if (strongSelf == nil) {
+        @try {
+            if (self.apiClient) {
+                [NSUserDefaults.mme_configuration mme_setAccessToken:accessToken];
                 return;
             }
 
-            [NSNotificationCenter.defaultCenter addObserver:strongSelf
-                selector:@selector(pauseOrResumeMetricsCollectionIfRequired)
-                name:UIApplicationDidEnterBackgroundNotification
-                object:nil];
-            [NSNotificationCenter.defaultCenter addObserver:strongSelf
-                selector:@selector(pauseOrResumeMetricsCollectionIfRequired)
-                name:UIApplicationDidBecomeActiveNotification
-                object:nil];
+            self.apiClient = [[MMEAPIClient alloc] initWithAccessToken:accessToken
+                                                         userAgentBase:userAgentBase
+                                                        hostSDKVersion:hostSDKVersion];
 
-            if (@available(iOS 9.0, *)) {
+            [self sendPendingTelemetryMetricsEvent];
+
+            __weak __typeof__(self) weakSelf = self;
+            void(^initialization)(void) = ^{
+                __strong __typeof__(weakSelf) strongSelf = weakSelf;
+
+                if (strongSelf == nil) {
+                    return;
+                }
+
                 [NSNotificationCenter.defaultCenter addObserver:strongSelf
-                    selector:@selector(powerStateDidChange:)
-                    name:NSProcessInfoPowerStateDidChangeNotification
-                    object:nil];
-            }
+                                                       selector:@selector(pauseOrResumeMetricsCollectionIfRequired)
+                                                           name:UIApplicationDidEnterBackgroundNotification
+                                                         object:nil];
+                [NSNotificationCenter.defaultCenter addObserver:strongSelf
+                                                       selector:@selector(pauseOrResumeMetricsCollectionIfRequired)
+                                                           name:UIApplicationDidBecomeActiveNotification
+                                                         object:nil];
 
-            strongSelf.paused = YES;
-            strongSelf.locationManager = [[MMELocationManager alloc] init];
-            strongSelf.locationManager.delegate = strongSelf;
-            [strongSelf resumeMetricsCollection];
+                if (@available(iOS 9.0, *)) {
+                    [NSNotificationCenter.defaultCenter addObserver:strongSelf
+                                                           selector:@selector(powerStateDidChange:)
+                                                               name:NSProcessInfoPowerStateDidChangeNotification
+                                                             object:nil];
+                }
 
-            strongSelf.timerManager = [[MMETimerManager alloc]
-                initWithTimeInterval:NSUserDefaults.mme_configuration.mme_eventFlushInterval
-                target:strongSelf
-                selector:@selector(flush)];
-        };
+                strongSelf.paused = YES;
+                strongSelf.locationManager = [[MMELocationManager alloc] init];
+                strongSelf.locationManager.delegate = strongSelf;
+                [strongSelf resumeMetricsCollection];
 
-        [self.dispatchManager scheduleBlock:initialization afterDelay:NSUserDefaults.mme_configuration.mme_startupDelay];
-    }
-    @catch(NSException *except) {
-        [self reportException:except];
-    }
+                strongSelf.timerManager = [[MMETimerManager alloc]
+                                           initWithTimeInterval:NSUserDefaults.mme_configuration.mme_eventFlushInterval
+                                           target:strongSelf
+                                           selector:@selector(flush)];
+            };
+
+            [self.dispatchManager scheduleBlock:initialization afterDelay:NSUserDefaults.mme_configuration.mme_startupDelay];
+        }
+        @catch(NSException *except) {
+            [self reportException:except];
+        }
 }
 
 #pragma mark - Enable/Disable
@@ -195,7 +197,7 @@ NS_ASSUME_NONNULL_BEGIN
             [self flush];
         }
                 
-        [self processAuthorizationStatus:[CLLocationManager authorizationStatus] andApplicationState:self.application.applicationState];
+        [self processAuthorizationStatus:[self.locationManager locationAuthorization] andApplicationState:self.application.applicationState];
     }
     @catch(NSException *except) {
         [self reportException:except];
@@ -331,20 +333,25 @@ NS_ASSUME_NONNULL_BEGIN
             return;
         }
 
-        NSDictionary *turnstileEventAttributes = @{
-            MMEEventKeyEvent: MMEEventTypeAppUserTurnstile,
-            MMEEventKeyCreated: [MMEDate.iso8601DateFormatter stringFromDate:[NSDate date]],
-            MMEEventKeyVendorID: self.commonEventData.vendorId,
-            // MMEEventKeyDevice is synonomous with MMEEventKeyModel but the server will only accept "device" in turnstile events
-            MMEEventKeyDevice: self.commonEventData.model,
-            MMEEventKeyOperatingSystem: self.commonEventData.osVersion,
-            MMEEventSDKIdentifier: NSUserDefaults.mme_configuration.mme_legacyUserAgentBase,
-            MMEEventSDKVersion: NSUserDefaults.mme_configuration.mme_legacyHostSDKVersion,
-            MMEEventKeyEnabledTelemetry: @(NSUserDefaults.mme_configuration.mme_isCollectionEnabled),
-            MMEEventKeyLocationEnabled: @(CLLocationManager.locationServicesEnabled),
-            MMEEventKeyLocationAuthorization: CLLocationManager.mme_authorizationStatusString,
-            MMEEventKeySkuId: self.skuId ?: NSNull.null
-       };
+        NSMutableDictionary *turnstileEventAttributes = [[NSMutableDictionary alloc] init];
+        turnstileEventAttributes[MMEEventKeyEvent] = MMEEventTypeAppUserTurnstile;
+        turnstileEventAttributes[MMEEventKeyCreated] = [MMEDate.iso8601DateFormatter stringFromDate:[NSDate date]];
+        turnstileEventAttributes[MMEEventKeyVendorID] = self.commonEventData.vendorId;
+        // MMEEventKeyDevice is synonomous with MMEEventKeyModel but the server will only accept "device" in turnstile events
+        turnstileEventAttributes[MMEEventKeyDevice] = self.commonEventData.model;
+        turnstileEventAttributes[MMEEventKeyOperatingSystem] = self.commonEventData.osVersion;
+        turnstileEventAttributes[MMEEventSDKIdentifier] = NSUserDefaults.mme_configuration.mme_legacyUserAgentBase;
+        turnstileEventAttributes[MMEEventSDKVersion] = NSUserDefaults.mme_configuration.mme_legacyHostSDKVersion;
+        turnstileEventAttributes[MMEEventKeyEnabledTelemetry] = @(NSUserDefaults.mme_configuration.mme_isCollectionEnabled);
+        turnstileEventAttributes[MMEEventKeyLocationEnabled] = @(CLLocationManager.locationServicesEnabled);
+        turnstileEventAttributes[MMEEventKeyLocationAuthorization] = [self.locationManager locationAuthorizationString];
+        turnstileEventAttributes[MMEEventKeySkuId] = self.skuId ?: NSNull.null;
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
+        if (@available(iOS 14, macOS 11.0, watchOS 7.0, tvOS 14.0, *)) {
+            turnstileEventAttributes[MMEEventKeyAccuracyAuthorization] = [self.locationManager accuracyAuthorizationString];
+        }
+#endif
 
         MMEEvent *turnstileEvent = [MMEEvent turnstileEventWithAttributes:turnstileEventAttributes];
         
@@ -580,10 +587,26 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)locationManager:(MMELocationManager *)locationManager didUpdateLocations:(NSArray *)locations {
     MMELOG(MMELogInfo, MMEDebugEventTypeLocationManager, ([NSString stringWithFormat:@"Location manager sent %ld locations, instance: %@", (long)locations.count, self.uniqueIdentifer.rollingInstanceIdentifer ?: @"nil"]));
-    
+
+    const BOOL appIsInBackground = (self.application.applicationState == UIApplicationStateBackground);
+
     for (CLLocation *location in locations) {
+        // Post events based on the `hao` config value.
+        // 1. `hao` config value is negative - No HA Filter. Always send the event.
+        // 2. `hao` value is smaller than the Location Horizontal Accuracy - Skip the event.
+        CLLocationAccuracy mmeHorizontalAccuracy = NSUserDefaults.mme_configuration.mme_horizontalAccuracy;
+        if (mmeHorizontalAccuracy >= 0 && location.horizontalAccuracy > mmeHorizontalAccuracy) {
+            [MMEMetricsManager.sharedManager incrementLocationsDroppedBecauseOfHAF];
+            continue;
+        }
+
+        if (appIsInBackground) {
+            [MMEMetricsManager.sharedManager incrementLocationsInBackground];
+        } else {
+            [MMEMetricsManager.sharedManager incrementLocationsInForeground];
+        }
+
         MMEMutableMapboxEventAttributes *eventAttributes = [[MMEMutableMapboxEventAttributes alloc] init];
-        
         [eventAttributes addEntriesFromDictionary:@{
             MMEEventKeyCreated: [MMEDate.iso8601DateFormatter stringFromDate:[location timestamp]],
             MMEEventKeyLatitude: @([location mme_latitudeRoundedWithPrecision:7]),
@@ -594,6 +617,13 @@ NS_ASSUME_NONNULL_BEGIN
             MMEEventKeySpeed: @([location mme_roundedSpeed]),
             MMEEventKeyCourse: @([location mme_roundedCourse])
         }];
+
+        NSString *digest = NSUserDefaults.mme_configuration.mme_configDigestValue;
+        if (digest) {
+            [eventAttributes addEntriesFromDictionary:@{
+                MMEEventKeyConfig: digest
+            }];
+        }
         
         if (@available(iOS 13.4, *)) {
             [eventAttributes addEntriesFromDictionary:@{
@@ -601,10 +631,19 @@ NS_ASSUME_NONNULL_BEGIN
                 MMEEventKeyCourseAccuracy: @([location courseAccuracy])
             }];
         }
-        
+
+        if ([self.locationManager isReducedAccuracy]) {
+            [eventAttributes addEntriesFromDictionary:@{
+                MMEEventKeyApproximate: @(YES)
+            }];
+            [MMEMetricsManager.sharedManager incrementLocationsWithApproximateValues];
+        }
+
         if ([location floor]) {
             [eventAttributes setValue:@([location floor].level) forKey:MMEEventKeyFloor];
         }
+
+        [MMEMetricsManager.sharedManager incrementLocationsConvertedIntoEvents];
 
         [self pushEvent:[MMEEvent locationEventWithAttributes:eventAttributes
                                             instanceIdentifer:self.uniqueIdentifer.rollingInstanceIdentifer

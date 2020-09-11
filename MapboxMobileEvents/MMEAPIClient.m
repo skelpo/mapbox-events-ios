@@ -144,6 +144,11 @@ int const kMMEMaxRequestCount = 1000;
 }
 
 // MARK: - Configuration Service
+void MMEDispatchMainIfNeeded(void (^block)(void))
+{
+    if ([NSThread isMainThread]) { block(); }
+    else { dispatch_sync(dispatch_get_main_queue(), block); }
+}
 
 - (void)startGettingConfigUpdates {
     if (self.isGettingConfigUpdates) {
@@ -152,49 +157,18 @@ int const kMMEMaxRequestCount = 1000;
 
     if (@available(iOS 10.0, macos 10.12, tvOS 10.0, watchOS 3.0, *)) {
         self.configurationUpdateTimer = [NSTimer
-            scheduledTimerWithTimeInterval:NSUserDefaults.mme_configuration.mme_configUpdateInterval
-            repeats:YES
-            block:^(NSTimer * _Nonnull timer) {
+                                         scheduledTimerWithTimeInterval:NSUserDefaults.mme_configuration.mme_configUpdateInterval
+                                         repeats:YES
+                                         block:^(NSTimer * _Nonnull timer) {
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+            dispatch_async(queue, ^{
                 NSURLRequest *request = [self requestForConfiguration];
-                
-                [self.sessionWrapper processRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-                    [MMEMetricsManager.sharedManager updateReceivedBytes:data.length];
-                    NSHTTPURLResponse *httpResponse = nil;
-                    NSError *statusError = nil;
-                    if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
-                        httpResponse = (NSHTTPURLResponse *)response;
-                        statusError = [self statusErrorFromRequest:request andHTTPResponse:httpResponse];
-                    } else {
-                        statusError = [self unexpectedResponseError:error fromRequest:request andResponse:response];
-                    }
-                    
-                    if (statusError) {
-                        [MMEEventsManager.sharedManager reportError:statusError];
-                    }
-                    else if (data) {
-                        NSError *configError = [NSUserDefaults.mme_configuration mme_updateFromConfigServiceData:data];
-                        if (configError) {
-                            [MMEEventsManager.sharedManager reportError:configError];
-                        }
-                        
-                        // check for time-offset from the server
-                        NSString *dateHeader = httpResponse.allHeaderFields[@"Date"];
-                        if (dateHeader) {
-                            // parse the server date, compute the offset
-                            NSDate *date = [MMEDate.HTTPDateFormatter dateFromString:dateHeader];
-                            if (date) {
-                                [MMEDate recordTimeOffsetFromServer:date];
-                            } // else failed to parse date
-                        }
-                        
-                        NSUserDefaults.mme_configuration.mme_configUpdateDate = MMEDate.date;
-                    }
+                MMEDispatchMainIfNeeded(^{
+                    [self processRequest:request];
+                });
+            });
+        }];
 
-                    [MMEMetricsManager.sharedManager updateMetricsFromEventCount:0 request:request error:error];
-                    [MMEMetricsManager.sharedManager generateTelemetryMetricsEvent];
-                }];
-            }];
-        
         // be power conscious and give this timer a minute of slack so it can be coalesced
         self.configurationUpdateTimer.tolerance = 60;
 
@@ -205,6 +179,71 @@ int const kMMEMaxRequestCount = 1000;
             [self.configurationUpdateTimer fire]; // update now
         }
     }
+}
+
++ (nullable NSString *)parseDigestHeader:(NSString *)digestHeader {
+    NSString *digest = nil;
+    if (digestHeader) {
+        // Look for 'SHA-256' hash in case of multiple different digest values
+        NSArray *kvs = [digestHeader componentsSeparatedByString:@","];
+        if (kvs.count >= 2) {
+            for (NSString *field in kvs) {
+                NSArray *keyValue = [field componentsSeparatedByString:@"SHA-256="];
+                if (keyValue.count == 2) {
+                    digest = keyValue[1];
+                }
+            }
+        } else {
+            // In case of single digest value, look for the 'SHA-256' hash, and
+            // fallback to the value received from the config service assuming
+            // that the Digest: header comes from a 1.0 config service has just
+            // a hash value.
+            digest = [digestHeader componentsSeparatedByString:@"SHA-256="].lastObject;
+        }
+    }
+    return digest;
+}
+
+- (void)processRequest:(NSURLRequest *)request {
+    [self.sessionWrapper processRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        [MMEMetricsManager.sharedManager updateReceivedBytes:data.length];
+        NSHTTPURLResponse *httpResponse = nil;
+        NSError *statusError = nil;
+        if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            httpResponse = (NSHTTPURLResponse *)response;
+            statusError = [self statusErrorFromRequest:request andHTTPResponse:httpResponse];
+        } else {
+            statusError = [self unexpectedResponseError:error fromRequest:request andResponse:response];
+        }
+
+        if (statusError) {
+            [MMEEventsManager.sharedManager reportError:statusError];
+        }
+        else if (data) {
+            NSError *configError = [NSUserDefaults.mme_configuration mme_updateFromConfigServiceData:data];
+            if (configError) {
+                [MMEEventsManager.sharedManager reportError:configError];
+            }
+
+            // check for time-offset from the server
+            NSString *dateHeader = httpResponse.allHeaderFields[@"Date"];
+            if (dateHeader) {
+                // parse the server date, compute the offset
+                NSDate *date = [MMEDate.HTTPDateFormatter dateFromString:dateHeader];
+                if (date) {
+                    [MMEDate recordTimeOffsetFromServer:date];
+                } // else failed to parse date
+            }
+
+            NSUserDefaults.mme_configuration.mme_configUpdateDate = MMEDate.date;
+
+            NSString* digest = [self.class parseDigestHeader:httpResponse.allHeaderFields[@"Digest"]];
+            [NSUserDefaults.mme_configuration mme_setConfigDigestValue:digest];
+        }
+
+        [MMEMetricsManager.sharedManager updateMetricsFromEventCount:0 request:request error:error];
+        [MMEMetricsManager.sharedManager generateTelemetryMetricsEvent];
+    }];
 }
 
 - (void)stopGettingConfigUpdates {
@@ -259,6 +298,16 @@ int const kMMEMaxRequestCount = 1000;
     [request setValue:MMEAPIClientHeaderFieldContentTypeValue forHTTPHeaderField:MMEAPIClientHeaderFieldContentTypeKey];
     [request setHTTPMethod:MMEAPIClientHTTPMethodPost];
     
+    NSDictionary *jsonDict = @{MMEClientId: NSUserDefaults.mme_configuration.mme_clientId};
+    NSError* jsonError = nil;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonDict options:0 error:&jsonError];
+    if (jsonData) {
+        [request setHTTPBody:jsonData];
+    } else if (jsonError) {
+        [MMEEventsManager.sharedManager reportError:jsonError];
+        return nil;
+    }
+
     return request;
 }
 

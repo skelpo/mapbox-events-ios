@@ -6,9 +6,11 @@
 #import "MMEUIApplicationWrapper.h"
 
 #if SWIFT_PACKAGE
+#import "Categories/CLLocationManager+MMEMobileEvents.h"
 #import "Categories/NSUserDefaults+MMEConfiguration.h"
 #import "Categories/NSBundle+MMEMobileEvents.h"
 #else
+#import "CLLocationManager+MMEMobileEvents.h"
 #import "NSUserDefaults+MMEConfiguration.h"
 #import "NSBundle+MMEMobileEvents.h"
 #endif
@@ -76,6 +78,37 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
     }
 }
 
+- (NSString *)locationAuthorizationString {
+    return [self.locationManager mme_authorizationStatusString];
+}
+
+- (CLAuthorizationStatus)locationAuthorization {
+    return [self.locationManager mme_authorizationStatus];
+}
+
+- (BOOL)isReducedAccuracy {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
+    if (@available(iOS 14.0, *)) {
+        CLAccuracyAuthorization status = [self.locationManager mme_accuracyStatus];
+        return status == CLAccuracyAuthorizationReducedAccuracy;
+    } else {
+        return NO;
+    }
+#else
+    return NO;
+#endif
+}
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
+- (NSString *)accuracyAuthorizationString {
+    if (@available(iOS 14.0, *)) {
+        return [self.locationManager mme_accuracyAutorizationString];
+    } else {
+        return @"";
+    }
+}
+#endif
+
 - (void)setLocationManager:(CLLocationManager *)locationManager {
     id<CLLocationManagerDelegate> delegate = _locationManager.delegate;
     _locationManager.delegate = nil;
@@ -94,7 +127,7 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
 - (void)setMetricsEnabledForInUsePermissions:(BOOL)metricsEnabledForInUsePermissions {
     _metricsEnabledForInUsePermissions = metricsEnabledForInUsePermissions;
     
-    CLAuthorizationStatus authorizationStatus = [CLLocationManager authorizationStatus];
+    CLAuthorizationStatus authorizationStatus = [self.locationManager mme_authorizationStatus];
     if (authorizationStatus == kCLAuthorizationStatusAuthorizedWhenInUse && self.hostAppHasBackgroundCapability) {
         if (@available(iOS 9.0, *)) {
             self.locationManager.allowsBackgroundLocationUpdates = self.isMetricsEnabledForInUsePermissions;
@@ -111,7 +144,7 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
 }
 
 - (void)startLocationServices {
-    CLAuthorizationStatus authorizationStatus = [CLLocationManager authorizationStatus];
+    CLAuthorizationStatus authorizationStatus = [self.locationManager mme_authorizationStatus];
     
     BOOL authorizedAlways = authorizationStatus == kCLAuthorizationStatusAuthorizedAlways;
     
@@ -191,6 +224,7 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
 
 #pragma mark - CLLocationManagerDelegate
 
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < 140000
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
     if (status == kCLAuthorizationStatusAuthorizedAlways ||
         status == kCLAuthorizationStatusAuthorizedWhenInUse) {
@@ -199,6 +233,17 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
         [self stopUpdatingLocation];
     }
 }
+#else
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager {
+    CLAuthorizationStatus status = [manager mme_authorizationStatus];
+    if (status == kCLAuthorizationStatusAuthorizedAlways ||
+        status == kCLAuthorizationStatusAuthorizedWhenInUse) {
+        [self startUpdatingLocation];
+    } else {
+        [self stopUpdatingLocation];
+    }
+}
+#endif
 
 - (void)locationManager:(CLLocationManager *)locationManager didUpdateLocations:(NSArray<CLLocation *> *)locations {
     CLLocation *location = locations.lastObject;
@@ -213,6 +258,7 @@ NSString * const MMELocationManagerRegionIdentifier = @"MMELocationManagerRegion
     }
     [[MMEMetricsManager sharedManager] updateCoordinate:location.coordinate];
     
+    // Fix: https://github.com/mapbox/mapbox-events-ios/issues/148
     if (location.horizontalAccuracy < MMERadiusAccuracyMax) {
         for(CLRegion *region in self.locationManager.monitoredRegions) {
             if([region.identifier isEqualToString:MMELocationManagerRegionIdentifier]) {

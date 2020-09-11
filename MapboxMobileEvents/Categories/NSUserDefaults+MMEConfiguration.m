@@ -5,7 +5,8 @@
 #import "../MMEConstants.h"
 #import "../MMEDate.h"
 #else
-#import <MapboxMobileEvents/MMEConstants.h>
+#import "MMEEventLogger.h"
+#import "MMEConstants.h"
 #import "MMEDate.h"
 #endif
 
@@ -106,6 +107,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self registerDefaults:@{
         MMEStartupDelay: @(startupDelay), // seconds
         MMEBackgroundGeofence: @(backgroundGeofence), // meters
+        MMEHorizontalAccuracy: @(MMEHorizontalAccuracyDefault), // meters
         MMEEventFlushCount: @(MMEEventFlushCountDefault), // events
         MMEEventFlushInterval: @(MMEEventFlushIntervalDefault), // seconds
         MMEIdentifierRotationInterval: @(MMEIdentifierRotationIntervalDefault), // 24 hours
@@ -209,6 +211,23 @@ NS_ASSUME_NONNULL_BEGIN
 
     [self mme_setObject:legacyHostSDKVersion forVolatileKey:MMELegacyHostSDKVersion];
     [self mme_deleteObjectForVolatileKey:MMELegacyUserAgent];
+}
+
+- (NSString *)mme_clientId {
+    NSString *clientId = [self stringForKey:MMEClientId];
+    if (!clientId) {
+        clientId = NSUUID.UUID.UUIDString;
+        [self mme_setObject:clientId forPersistentKey:MMEClientId];
+    }
+    return clientId;
+}
+
+- (nullable NSString *)mme_configDigestValue {
+    return (NSString *)[self stringForKey:MMEConfigDigestHeaderValue];
+}
+
+- (void)mme_setConfigDigestValue:(nullable NSString *)digestHeader {
+    [self mme_setObject:digestHeader forPersistentKey:MMEConfigDigestHeaderValue];
 }
 
 // MARK: - Service Configuration
@@ -431,6 +450,10 @@ NS_ASSUME_NONNULL_BEGIN
     return (CLLocationDistance)[self doubleForKey:MMEBackgroundGeofence];
 }
 
+-(CLLocationAccuracy)mme_horizontalAccuracy {
+    return (CLLocationAccuracy)[self doubleForKey:MMEHorizontalAccuracy];
+}
+
 // MARK: - Certificate Pinning and Revocation
 
 - (NSArray<NSString *>*)mme_certificateRevocationList {
@@ -553,6 +576,20 @@ NS_ASSUME_NONNULL_BEGIN
             }
         }
         
+        // `hao` config option for horizontal accuracy override. Possible values:
+        // -1 - No HA Filter
+        // 0 - Reset to Defaults, delete locally saved hao value in the prefs.
+        // >0 - Maximum HA in Meters, saved to local preferences and used until the value reset or changed.
+        id configHAO = [configDictionary objectForKey:MMEConfigHAOKey];
+        if ([configHAO isKindOfClass:NSNumber.class]) {
+            CLLocationDistance horizontalAccuracy = [configHAO doubleValue];
+            if (horizontalAccuracy != 0) {
+                [self mme_setObject:@(horizontalAccuracy) forPersistentKey:MMEHorizontalAccuracy];
+            } else { // fallback to the default
+                [self removeObjectForKey:MMEHorizontalAccuracy];
+            }
+        }
+
         id configBSO = [configDictionary objectForKey:MMEConfigBSOKey];
         if ([configBSO isKindOfClass:NSNumber.class]) {
             NSTimeInterval bsoInterval = [configBSO doubleValue];

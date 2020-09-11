@@ -76,15 +76,17 @@
 
 - (void)test001_checkCNHashCount {
     NSArray *cnHashes = NSUserDefaults.mme_configuration.mme_certificatePinningConfig[@"events.mapbox.cn"];
-    XCTAssert(cnHashes.count == 54);
+    XCTAssert(cnHashes.count == 4);
 }
 
 -(void)test002_checkCOMHashCount {
     NSArray *comHashes = NSUserDefaults.mme_configuration.mme_certificatePinningConfig[@"events.mapbox.com"];
-    XCTAssert(comHashes.count == 54);
+    XCTAssert(comHashes.count == 4);
 }
     
 -(void)test003_countCNHashesWithBlacklist {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-crl"];
     [self.apiClient startGettingConfigUpdates];
@@ -92,10 +94,12 @@
     XCTAssertNil(configError);
 
     NSArray *cnHashes = NSUserDefaults.mme_configuration.mme_certificatePinningConfig[@"events.mapbox.cn"];
-    XCTAssert(cnHashes.count == 53);
+    XCTAssert(cnHashes.count == 3);
 }
             
 -(void)test004_countCOMHashesWithBlacklist {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-crl"];
     [self.apiClient startGettingConfigUpdates];
@@ -103,7 +107,7 @@
     XCTAssertNil(configError);
 
     NSArray *comHashes = NSUserDefaults.mme_configuration.mme_certificatePinningConfig[@"events.mapbox.com"];
-    XCTAssert(comHashes.count == 53);
+    XCTAssert(comHashes.count == 3);
 }
 
 -(void)test005_validateCNHashes {

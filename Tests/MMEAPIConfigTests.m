@@ -49,11 +49,29 @@
 }
 
 - (void) test002_StaringConfigUdpate {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-null"];
-    
     [self.apiClient startGettingConfigUpdates];
-    XCTAssert(self.apiClient.isGettingConfigUpdates);
+
+    XCTestExpectation *expectation = nil;
+    expectation = [self expectationWithDescription:@"apiClient should be getting config updates"];
+
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_async(queue, ^{
+        for (int i=0; i<50; i++) {
+            if (self.apiClient.isGettingConfigUpdates) {
+                [expectation fulfill];
+                break;
+            } else {
+                [NSThread sleepForTimeInterval:0.1];
+            }
+        }
+    });
+
+    [self waitForExpectations:@[expectation] timeout:5];
+
     XCTAssert([configFixture waitForConnectionWithTimeout:MME10sTimeout error:&configError]);
     XCTAssertNil(configError);
 }
@@ -64,6 +82,8 @@
 }
 
 - (void) test004_ShortUpdateInterval {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-null"];
     [NSUserDefaults.mme_configuration registerDefaults:@{MMEConfigurationUpdateInterval: @(MME1sTimeout)}];
@@ -76,6 +96,8 @@
 }
 
 - (void) test005_1sBSO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-1s-bso"];
     [self.apiClient startGettingConfigUpdates];
@@ -87,6 +109,8 @@
 }
 
 - (void) test006_10sBSO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-10s-bso"];
     [self.apiClient startGettingConfigUpdates];
@@ -98,6 +122,8 @@
 }
 
 - (void) test007_100mGFO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-100m-gfo"];
     [self.apiClient startGettingConfigUpdates];
@@ -109,6 +135,8 @@
 }
 
 - (void) test008_1000mGFO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-1000m-gfo"];
     [self.apiClient startGettingConfigUpdates];
@@ -120,6 +148,8 @@
 }
 
 - (void) test009_10000mGFO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-10000m-gfo"];
     [self.apiClient startGettingConfigUpdates];
@@ -131,6 +161,8 @@
 }
 
 - (void) test010_NullConfig {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-null"];
     [self.apiClient startGettingConfigUpdates];
@@ -141,6 +173,8 @@
 }
 
 - (void) test010_NullTag {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-null-tag"];
     [self.apiClient startGettingConfigUpdates];
@@ -152,6 +186,8 @@
 }
 
 - (void) test011_NumberTag {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-number-tag"];
     [self.apiClient startGettingConfigUpdates];
@@ -163,6 +199,8 @@
 }
 
 - (void) test012_TestTag {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-test-tag"];
     [self.apiClient startGettingConfigUpdates];
@@ -173,6 +211,8 @@
 }
 
 - (void) test013_Type1TTO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-type1-tto"];
     [self.apiClient startGettingConfigUpdates];
@@ -185,6 +225,8 @@
 }
 
 - (void) test014_Type2TTO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-type2-tto"];
     [self.apiClient startGettingConfigUpdates];
@@ -197,6 +239,8 @@
 }
 
 - (void) test015_All {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-all"];
     [self.apiClient startGettingConfigUpdates];
@@ -206,10 +250,13 @@
     XCTAssertNil(self.eventsError);
     XCTAssert(NSUserDefaults.mme_configuration.mme_backgroundStartupDelay == 44);
     XCTAssert(NSUserDefaults.mme_configuration.mme_backgroundGeofence == 444);
+    XCTAssert(NSUserDefaults.mme_configuration.mme_horizontalAccuracy == 400);
     XCTAssert([NSUserDefaults.mme_configuration.mme_eventTag isEqualToString:@"all"]);
 }
 
 - (void) test016_AllWrong {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-all-wrong"];
     [self.apiClient startGettingConfigUpdates];
@@ -219,6 +266,7 @@
     XCTAssertNil(self.eventsError);
     XCTAssert(NSUserDefaults.mme_configuration.mme_backgroundStartupDelay == 15); // default
     XCTAssert(NSUserDefaults.mme_configuration.mme_backgroundGeofence == 300); // default
+    XCTAssert(NSUserDefaults.mme_configuration.mme_horizontalAccuracy == 300); // default
     XCTAssertNil(NSUserDefaults.mme_configuration.mme_eventTag); // default
 }
 
@@ -229,6 +277,8 @@
 }
 
 - (void) test018_configShouldUpdateOnStartWithPastDate {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     [NSUserDefaults.mme_configuration mme_setConfigUpdateDate:(MMEDate *)[MMEDate distantPast]];
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-null"];
@@ -240,12 +290,53 @@
 }
 
 - (void) test019_configShouldUpdateClockOffset {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
     NSError *configError = nil;
     MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-long-ago"];
     [self.apiClient startGettingConfigUpdates];
     XCTAssert(self.apiClient.isGettingConfigUpdates);
     XCTAssert([configFixture waitForConnectionWithTimeout:MME10sTimeout error:&configError]);
     XCTAssert(fabs(MMEDate.recordedTimeOffsetFromServer) - fabs(MMEDate.date.timeIntervalSince1970) < MME10sTimeout);
+}
+
+- (void) test020_10mHAO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
+    NSError *configError = nil;
+    MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-hao-10m"];
+    [self.apiClient startGettingConfigUpdates];
+
+    XCTAssert([configFixture waitForConnectionWithTimeout:MME10sTimeout error:&configError]);
+    XCTAssertNil(configError);
+    XCTAssertNil(self.eventsError);
+    XCTAssert(NSUserDefaults.mme_configuration.mme_horizontalAccuracy == 10);
+}
+
+- (void) test021_negativeHAO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
+    NSError *configError = nil;
+    MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-hao-negative"];
+    [self.apiClient startGettingConfigUpdates];
+
+    XCTAssert([configFixture waitForConnectionWithTimeout:MME10sTimeout error:&configError]);
+    XCTAssertNil(configError);
+    XCTAssertNil(self.eventsError);
+    XCTAssert(NSUserDefaults.mme_configuration.mme_horizontalAccuracy == -1);
+}
+
+- (void) test022_nullHAO {
+    XCTSkipIf(([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){.majorVersion = 14, .minorVersion = 0, .patchVersion = 0}]), @"Skip, since CFSocketInvalidate crashes with EXC_GUARD on iOS 14");
+
+    NSError *configError = nil;
+    MMEServiceFixture *configFixture = [MMEServiceFixture serviceFixtureWithResource:@"config-hao-null"];
+    [self.apiClient startGettingConfigUpdates];
+
+    XCTAssert([configFixture waitForConnectionWithTimeout:MME10sTimeout error:&configError]);
+    XCTAssertNil(configError);
+    XCTAssertNil(self.eventsError);
+    XCTAssert(NSUserDefaults.mme_configuration.mme_horizontalAccuracy == 300); // default value
 }
 
 // MARK: - MMEEventsManagerDelegate
